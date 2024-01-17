@@ -13,6 +13,7 @@ import android.os.Bundle;
 import android.provider.Settings;
 import android.util.Log;
 import android.widget.Button;
+import android.widget.ExpandableListView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -34,8 +35,10 @@ import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 
+import org.focus.app.AccountsList.ExpandableListViewAdapter;
 import org.focus.app.Constants.API;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
@@ -56,10 +59,20 @@ public class HomeActivity extends AppCompatActivity {
     private SharedPreferences userPref;
 
 
+    ExpandableListViewAdapter listViewAdapter;
+    ExpandableListView expandableListView;
+
+    List<String> accountList;
+
+    HashMap<String, List<String>> accountDetailsList;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
+
+        expandableListView = findViewById(R.id.listViewAccounts);
 
         userPref = getSharedPreferences("user", Context.MODE_PRIVATE);
 
@@ -71,6 +84,12 @@ public class HomeActivity extends AppCompatActivity {
 
         checkLocationPermission();
         convertAddressToLatLng();
+
+        showAccountList();
+
+        listViewAdapter = new ExpandableListViewAdapter(this, accountList, accountDetailsList);
+        expandableListView.setAdapter(listViewAdapter);
+
     }
 
     @Override
@@ -244,6 +263,39 @@ public class HomeActivity extends AppCompatActivity {
             startLocationService();
             sendLocation();
         }
+    }
+
+
+    private void showAccountList(){
+
+        accountList = new ArrayList<String>();
+        accountDetailsList = new HashMap<String, List<String>>();
+
+
+        accountList.add("Borrower 1");
+        accountList.add("Borrower 2");
+        accountList.add("Borrower 3");
+
+
+
+        List<String> details1 = new ArrayList<>();
+        details1.add("Marikina");
+        details1.add("La Union");
+
+        List<String> details2 = new ArrayList<>();
+        details2.add("Makati");
+        details2.add("Davao");
+
+        List<String> details3 = new ArrayList<>();
+        details3.add("Taguig");
+        details3.add("Cebu");
+
+
+        accountDetailsList.put(accountList.get(0), details1);
+        accountDetailsList.put(accountList.get(1), details2);
+        accountDetailsList.put(accountList.get(2), details3);
+
+
     }
 
 

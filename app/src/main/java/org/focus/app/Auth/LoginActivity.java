@@ -119,7 +119,6 @@ public class LoginActivity extends AppCompatActivity {
                     editor.putString("token", jsonObject.getString("token"));
                     editor.putString("name", userObject.getString("name"));
                     editor.putString("username", userObject.getString("username"));
-                    editor.putString("email", userObject.getString("email"));
                     editor.putString("collectors_id", userObject.getString("collectors_id"));
 
                     editor.putBoolean("isLoggedIn", true);
