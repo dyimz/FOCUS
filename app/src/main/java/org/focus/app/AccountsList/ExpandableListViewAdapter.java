@@ -15,12 +15,13 @@ import java.util.List;
 public class ExpandableListViewAdapter extends BaseExpandableListAdapter {
 
     private Context context;
-    private List<String> accountList;
+    private List<String> accountList, distanceList;
     private HashMap<String, List<String>> accountDetails;
 
-    public ExpandableListViewAdapter(Context context, List<String> accountList, HashMap<String, List<String>> accountDetails) {
+    public ExpandableListViewAdapter(Context context, List<String> accountList, List<String> distanceList, HashMap<String, List<String>> accountDetails) {
         this.context = context;
         this.accountList = accountList;
+        this.distanceList = distanceList;
         this.accountDetails = accountDetails;
     }
 
@@ -63,6 +64,8 @@ public class ExpandableListViewAdapter extends BaseExpandableListAdapter {
     public View getGroupView(int groupPosition, boolean isExpanded, View convertView, ViewGroup parent) {
 
         String accountName = (String) getGroup(groupPosition);
+        String accountDistance = distanceList.get(groupPosition);
+
 
         if(convertView == null){
             LayoutInflater inflater = (LayoutInflater) this.context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
@@ -71,6 +74,9 @@ public class ExpandableListViewAdapter extends BaseExpandableListAdapter {
 
         TextView accountNameTv = convertView.findViewById(R.id.accountNameTv);
         accountNameTv.setText(accountName);
+
+        TextView distanceTv = convertView.findViewById(R.id.accountDistanceTv);
+        distanceTv.setText(accountDistance);
 
         return convertView;
     }
