@@ -8,9 +8,8 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
-import android.net.Uri;
 import android.os.Bundle;
-import android.provider.Settings;
+import android.os.Handler;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.ExpandableListView;
@@ -37,6 +36,10 @@ import com.google.android.gms.location.LocationServices;
 
 import org.focus.app.AccountsList.ExpandableListViewAdapter;
 import org.focus.app.Constants.API;
+import org.focus.app.Location.LocationService;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -49,7 +52,6 @@ import java.io.IOException;
 
 public class HomeActivity extends AppCompatActivity {
 
-    Button btnLocate;
     private FusedLocationProviderClient fusedLocationClient;
     private LocationRequest locationRequest;
     private LocationCallback locationCallback;
@@ -73,6 +75,8 @@ public class HomeActivity extends AppCompatActivity {
         setContentView(R.layout.activity_home);
 
         expandableListView = findViewById(R.id.listViewAccounts);
+        expandableListView.setGroupIndicator(null);
+
 
         userPref = getSharedPreferences("user", Context.MODE_PRIVATE);
 
@@ -85,23 +89,18 @@ public class HomeActivity extends AppCompatActivity {
         checkLocationPermission();
         convertAddressToLatLng();
 
-        showAccountList();
+        accountList = new ArrayList<String>();
+        accountDetailsList = new HashMap<String, List<String>>();
 
         listViewAdapter = new ExpandableListViewAdapter(this, accountList, accountDetailsList);
         expandableListView.setAdapter(listViewAdapter);
 
-    }
+        showAccountList();
 
-    @Override
-    protected void onStart() {
-        super.onStart();
-        sendLocation();
-    }
+        handler.post(fetchData);
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        sendLocation();
+
+
     }
 
     // Function to convert an address to latitude and longitude
@@ -133,6 +132,7 @@ public class HomeActivity extends AppCompatActivity {
     }
 
     private void createLocationCallback() {
+
         locationCallback = new LocationCallback() {
             @Override
             public void onLocationResult(@NonNull LocationResult locationResult) {
@@ -198,7 +198,6 @@ public class HomeActivity extends AppCompatActivity {
         fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, null);
     }
 
-
     private void checkLocationPermission() {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             showLocationPermissionRationale();
@@ -246,6 +245,101 @@ public class HomeActivity extends AppCompatActivity {
         }
     }
 
+
+    private void showAccountList(){
+        StringRequest request = new StringRequest(Request.Method.GET, API.locate_borrower_api, response -> {
+            try {
+                JSONObject jsonObject = new JSONObject(response);
+                JSONArray jsonArray = jsonObject.getJSONArray("Collector Task");
+
+                if (jsonObject.getBoolean("success")) {
+                    // Temporary lists to hold new data
+                    List<String> newAccountList = new ArrayList<>();
+                    HashMap<String, List<String>> newAccountDetailsList = new HashMap<>();
+
+                    for (int i = 0; i < jsonArray.length(); i++) {
+                        JSONObject object = jsonArray.getJSONObject(i);
+
+                        String borrowerFullName = object.getString("borrower_full_name");
+                        // Check if this borrower's name is already in the list
+                        if (!accountList.contains(borrowerFullName)) {
+                            newAccountList.add(borrowerFullName);
+
+                            String address = object.getString("address");
+                            String contactNo = object.getString("contact_no");
+                            String debtAmount = object.getString("debt_amount");
+                            String debtStatus = object.getString("debt_status");
+
+                            List<String> details = new ArrayList<>();
+                            details.add("Address: " + address);
+                            details.add("Contact No: " + contactNo);
+                            details.add("Debt Amount: " + debtAmount);
+                            details.add("Debt Status: " + debtStatus);
+                            newAccountDetailsList.put(borrowerFullName, details);
+                        }
+                    }
+
+                    // Update the main lists only if there is new data
+                    if (!newAccountList.isEmpty()) {
+                        accountList.addAll(newAccountList);
+                        accountDetailsList.putAll(newAccountDetailsList);
+                        listViewAdapter.notifyDataSetChanged();
+                    }
+
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }, error -> {
+            error.printStackTrace();
+        }) {
+            @Override
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                String token = userPref.getString("token", "");
+                HashMap<String, String> map = new HashMap<>();
+                map.put("Authorization", "Bearer " + token);
+                return map;
+            }
+        };
+
+        RequestQueue queue = Volley.newRequestQueue(this);
+        request.setRetryPolicy(new DefaultRetryPolicy(
+                10000,
+                DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
+                DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
+        queue.add(request);
+    }
+
+
+    private Handler handler = new Handler();
+    private Runnable fetchData = new Runnable() {
+        @Override
+        public void run() {
+
+            // Call the method to fetch data
+            showAccountList();
+
+            // Repeat this runnable code block again every 5 seconds
+            handler.postDelayed(this, 5000);
+        }
+    };
+
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        sendLocation();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        sendLocation();
+
+        handler.removeCallbacks(fetchData);
+
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
@@ -265,38 +359,6 @@ public class HomeActivity extends AppCompatActivity {
         }
     }
 
-
-    private void showAccountList(){
-
-        accountList = new ArrayList<String>();
-        accountDetailsList = new HashMap<String, List<String>>();
-
-
-        accountList.add("Borrower 1");
-        accountList.add("Borrower 2");
-        accountList.add("Borrower 3");
-
-
-
-        List<String> details1 = new ArrayList<>();
-        details1.add("Marikina");
-        details1.add("La Union");
-
-        List<String> details2 = new ArrayList<>();
-        details2.add("Makati");
-        details2.add("Davao");
-
-        List<String> details3 = new ArrayList<>();
-        details3.add("Taguig");
-        details3.add("Cebu");
-
-
-        accountDetailsList.put(accountList.get(0), details1);
-        accountDetailsList.put(accountList.get(1), details2);
-        accountDetailsList.put(accountList.get(2), details3);
-
-
-    }
 
 
 

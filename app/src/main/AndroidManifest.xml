@@ -45,11 +45,11 @@
             android:exported="false" />
 
         <service
-            android:name=".LocationService"
+            android:name=".Location.LocationService"
             android:foregroundServiceType="location" />
 
         <receiver
-            android:name=".BootCompletedReceiver"
+            android:name=".BootReceiver.BootCompletedReceiver"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />

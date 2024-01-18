@@ -1,9 +1,11 @@
-package org.focus.app;
+package org.focus.app.BootReceiver;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import androidx.core.content.ContextCompat;
+
+import org.focus.app.Location.LocationService;
 
 public class BootCompletedReceiver extends BroadcastReceiver {
     @Override

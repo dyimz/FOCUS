@@ -1,4 +1,4 @@
-package org.focus.app;
+package org.focus.app.Location;
 
 import android.Manifest;
 import android.app.Notification;
@@ -38,6 +38,9 @@ import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.os.SystemClock;
+
+import org.focus.app.HomeActivity;
+import org.focus.app.R;
 
 public class LocationService extends Service {
 
