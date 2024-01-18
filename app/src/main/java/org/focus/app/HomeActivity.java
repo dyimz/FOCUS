@@ -42,7 +42,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.List;
 
@@ -65,8 +67,12 @@ public class HomeActivity extends AppCompatActivity {
     ExpandableListView expandableListView;
 
     List<String> accountList;
+    List<String> distanceList;
 
     HashMap<String, List<String>> accountDetailsList;
+
+    private double currentUserLatitude = 0.0;
+    private double currentUserLongitude = 0.0;
 
 
     @Override
@@ -87,12 +93,14 @@ public class HomeActivity extends AppCompatActivity {
 
 
         checkLocationPermission();
-        convertAddressToLatLng();
+//        convertAddressToLatLng();
 
         accountList = new ArrayList<String>();
+        distanceList = new ArrayList<String>();
+
         accountDetailsList = new HashMap<String, List<String>>();
 
-        listViewAdapter = new ExpandableListViewAdapter(this, accountList, accountDetailsList);
+        listViewAdapter = new ExpandableListViewAdapter(this, accountList, distanceList, accountDetailsList);
         expandableListView.setAdapter(listViewAdapter);
 
         showAccountList();
@@ -100,29 +108,10 @@ public class HomeActivity extends AppCompatActivity {
         handler.post(fetchData);
 
 
-
     }
 
     // Function to convert an address to latitude and longitude
-    private void convertAddressToLatLng() {
-        String addressString = "Block 138 Lot 45 Aquino Street, Upper Bicutan, Taguig City, Metro Manila";
-        Geocoder geocoder = new Geocoder(this);
-        try {
-            List<Address> addresses = geocoder.getFromLocationName(addressString, 1);
-            if (addresses != null && !addresses.isEmpty()) {
-                Address address = addresses.get(0);
-                double latitude = address.getLatitude();
-                double longitude = address.getLongitude();
 
-                Log.d("Location", "Latitude: " + latitude + ", Longitude: " + longitude);
-            } else {
-                Log.d("Location", "Address not found");
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-            Log.d("Location", "Geocoder IOException");
-        }
-    }
 
     private void createLocationRequest() {
         locationRequest = LocationRequest.create();
@@ -141,23 +130,23 @@ public class HomeActivity extends AppCompatActivity {
                 }
                 for (Location location : locationResult.getLocations()) {
                     // Display the location in a Toast
-                    double latitude = location.getLatitude();
-                    double longitude = location.getLongitude();
+                    currentUserLatitude = location.getLatitude();
+                    currentUserLongitude = location.getLongitude();
 
 
                     StringRequest request = new StringRequest(Request.Method.POST, API.locate_api, new Response.Listener<String>() {
                         @Override
                         public void onResponse(String response) {
-                            try{
+                            try {
 
-                            } catch (Error error){
+                            } catch (Error error) {
                                 error.printStackTrace();
                             }
                         }
                     }, error -> {
                         Toast.makeText(HomeActivity.this, "Something Went Wrong", Toast.LENGTH_SHORT).show();
                         error.printStackTrace();
-                    }){
+                    }) {
 
                         @Override
                         public Map<String, String> getHeaders() throws AuthFailureError {
@@ -171,8 +160,8 @@ public class HomeActivity extends AppCompatActivity {
                         @Override
                         protected Map<String, String> getParams() throws AuthFailureError {
                             HashMap<String, String> map = new HashMap<>();
-                            map.put("latitude", String.valueOf(latitude));
-                            map.put("longitude", String.valueOf(longitude));
+                            map.put("latitude", String.valueOf(currentUserLatitude));
+                            map.put("longitude", String.valueOf(currentUserLongitude));
                             return map;
                         }
                     };
@@ -245,23 +234,43 @@ public class HomeActivity extends AppCompatActivity {
         }
     }
 
+    private boolean shouldUpdateList(List<Float> newDistances) {
+        if (distanceList.size() != newDistances.size()) {
+            return true;
+        }
 
-    private void showAccountList(){
+        for (int i = 0; i < distanceList.size(); i++) {
+            float oldDistance = Float.parseFloat(distanceList.get(i).split(" ")[0]);
+            float newDistance = newDistances.get(i);
+            if (Math.abs(oldDistance - newDistance) > 0.5) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void showAccountList() {
+
+        accountList.clear();
+        distanceList.clear();
+        accountDetailsList.clear();
+
+
         StringRequest request = new StringRequest(Request.Method.GET, API.locate_borrower_api, response -> {
             try {
                 JSONObject jsonObject = new JSONObject(response);
                 JSONArray jsonArray = jsonObject.getJSONArray("Collector Task");
 
                 if (jsonObject.getBoolean("success")) {
-                    // Temporary lists to hold new data
                     List<String> newAccountList = new ArrayList<>();
                     HashMap<String, List<String>> newAccountDetailsList = new HashMap<>();
+                    List<String> newDistanceList = new ArrayList<>();
+                    List<Float> newDistances = new ArrayList<>();
 
                     for (int i = 0; i < jsonArray.length(); i++) {
                         JSONObject object = jsonArray.getJSONObject(i);
-
                         String borrowerFullName = object.getString("borrower_full_name");
-                        // Check if this borrower's name is already in the list
+
                         if (!accountList.contains(borrowerFullName)) {
                             newAccountList.add(borrowerFullName);
 
@@ -276,16 +285,61 @@ public class HomeActivity extends AppCompatActivity {
                             details.add("Debt Amount: " + debtAmount);
                             details.add("Debt Status: " + debtStatus);
                             newAccountDetailsList.put(borrowerFullName, details);
+
+                            String latitude = object.getString("latitude");
+                            String longitude = object.getString("longitude");
+
+                            Double borrowerLatitude = Double.valueOf(latitude);
+                            Double borrowerLongitude = Double.valueOf(longitude);
+
+
+
+                            float[] results = new float[1];
+                            Location.distanceBetween(currentUserLatitude, currentUserLongitude, borrowerLatitude, borrowerLongitude, results);
+                            float distanceInKilometers = results[0] / 1000;
+                            newDistances.add(distanceInKilometers);
+
+                            String distanceString = String.format(Locale.getDefault(), "%.2f km", distanceInKilometers);
+                            newDistanceList.add(distanceString);
+
+
+
+
+
                         }
                     }
 
-                    // Update the main lists only if there is new data
-                    if (!newAccountList.isEmpty()) {
-                        accountList.addAll(newAccountList);
-                        accountDetailsList.putAll(newAccountDetailsList);
-                        listViewAdapter.notifyDataSetChanged();
-                    }
+                    if (shouldUpdateList(newDistances)) {
+                        // Sort based on distances
+                        List<Integer> indices = new ArrayList<>();
+                        for (int i = 0; i < newDistances.size(); i++) {
+                            indices.add(i);
+                        }
+                        Collections.sort(indices, (i1, i2) -> Float.compare(newDistances.get(i1), newDistances.get(i2)));
 
+                        // Apply sorting to the main lists
+                        List<String> sortedAccountList = new ArrayList<>();
+                        List<String> sortedDistanceList = new ArrayList<>();
+                        HashMap<String, List<String>> sortedAccountDetailsList = new HashMap<>();
+
+                        for (int index : indices) {
+                            String account = newAccountList.get(index);
+                            sortedAccountList.add(account);
+                            sortedDistanceList.add(newDistanceList.get(index));
+                            sortedAccountDetailsList.put(account, newAccountDetailsList.get(account));
+                        }
+
+                        if (!newAccountList.isEmpty()) {
+
+                            accountList.addAll(sortedAccountList);
+                            distanceList.addAll(sortedDistanceList);
+                            accountDetailsList.putAll(sortedAccountDetailsList);
+
+                            listViewAdapter.notifyDataSetChanged();
+
+                        }
+
+                    }
                 }
             } catch (JSONException e) {
                 e.printStackTrace();
@@ -358,9 +412,4 @@ public class HomeActivity extends AppCompatActivity {
             sendLocation();
         }
     }
-
-
-
-
-
 }
