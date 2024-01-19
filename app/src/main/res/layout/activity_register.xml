@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".RegisterActivity">
+
+    <!--    Full Name-->
+    <TextView
+        android:id="@+id/txtTitleFullname"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Full Name"
+        android:layout_marginLeft="@dimen/_30sdp"
+        android:layout_marginTop="@dimen/_60sdp"
+        android:textSize="@dimen/_10sdp"
+        android:textStyle="bold"
+        />
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/layoutTextFullname"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/txtTitleFullname"
+        android:layout_marginLeft="@dimen/_30sdp"
+        android:layout_marginRight="@dimen/_30sdp"
+        android:layout_marginTop="@dimen/_7sdp"
+        >
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/edtInputFullname"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Enter your Full Name"
+            />
+    </com.google.android.material.textfield.TextInputLayout>
+
+
+
+    <!--    Username-->
+    <TextView
+        android:id="@+id/txtTitleUsername"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/layoutTextFullname"
+        android:text="Username"
+        android:layout_marginLeft="@dimen/_30sdp"
+        android:layout_marginTop="@dimen/_30sdp"
+        android:textSize="@dimen/_10sdp"
+        android:textStyle="bold"
+        />
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/layoutTextUsername"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/txtTitleUsername"
+        android:layout_marginLeft="@dimen/_30sdp"
+        android:layout_marginRight="@dimen/_30sdp"
+        android:layout_marginTop="@dimen/_7sdp"
+        >
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/edtInputUsername"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Enter your Username"
+            />
+    </com.google.android.material.textfield.TextInputLayout>
+
+
+    <!--    Password-->
+    <TextView
+        android:id="@+id/txtTitlePassword"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/layoutTextUsername"
+        android:layout_marginLeft="@dimen/_30sdp"
+        android:layout_marginTop="@dimen/_30sdp"
+        android:textSize="@dimen/_10sdp"
+        android:textStyle="bold"
+        android:text="Password"
+        />
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/layoutTextPassword"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/txtTitlePassword"
+        android:layout_marginLeft="@dimen/_30sdp"
+        android:layout_marginRight="@dimen/_30sdp"
+        android:layout_marginTop="@dimen/_7sdp"
+        >
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/edtInputPassword"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textPassword"
+            android:hint="Enter your Password" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+
+
+    <!--    Confirm Password-->
+    <TextView
+        android:id="@+id/txtTitleConfirmPassword"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/layoutTextPassword"
+        android:layout_marginLeft="@dimen/_30sdp"
+        android:layout_marginTop="@dimen/_30sdp"
+        android:textSize="@dimen/_10sdp"
+        android:textStyle="bold"
+        android:text="Confirm Password"
+        />
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/layoutTextConfirmPassword"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/txtTitleConfirmPassword"
+        android:layout_marginLeft="@dimen/_30sdp"
+        android:layout_marginRight="@dimen/_30sdp"
+        android:layout_marginTop="@dimen/_7sdp"
+        >
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/edtInputConfirmPassword"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textPassword"
+            android:hint="Enter your Password" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+
+
+    <!--    Register Button-->
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btnRegister"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/layoutTextConfirmPassword"
+        android:background="@drawable/btn_round_main_color"
+        android:layout_centerHorizontal="true"
+        android:layout_marginStart="@dimen/_30sdp"
+        android:layout_marginTop="@dimen/_30sdp"
+        android:layout_marginEnd="@dimen/_30sdp"
+        android:layout_marginBottom="@dimen/_10sdp"
+        android:text="REGISTER"
+        android:textSize="@dimen/_10sdp"
+        android:textStyle="bold"
+        android:textColor="@color/white"
+        />
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:layout_below="@id/btnRegister"
+        >
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Already have an account? "/>
+
+        <TextView
+            android:id="@+id/txtLinkLogin"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Login Here"
+            android:textColor="@color/main_color"
+            android:textStyle="bold"/>
+
+
+    </LinearLayout>
+
+
+
+
+
+
+</RelativeLayout>
