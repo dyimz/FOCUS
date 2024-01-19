@@ -141,10 +141,12 @@ public class HomeActivity extends AppCompatActivity {
                             Double borrowerLatitude = Double.valueOf(latitude);
                             Double borrowerLongitude = Double.valueOf(longitude);
 
-                            String collectorLatitude = locationPref.getString("latitude", "");
-                            String collectorLongitude = locationPref.getString("longitude", "");
+                            String collectorLatitude = locationPref.getString("latitude", "0.0");
+                            String collectorLongitude = locationPref.getString("longitude", "0.0");
+
                             currentUserLatitude = Double.parseDouble(collectorLatitude);
                             currentUserLongitude = Double.parseDouble(collectorLongitude);
+
                             float[] results = new float[1];
                             Location.distanceBetween(currentUserLatitude, currentUserLongitude, borrowerLatitude, borrowerLongitude, results);
                             float distanceInKilometers = results[0] / 1000;
