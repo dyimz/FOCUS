@@ -55,6 +55,7 @@ public class HomeActivity extends AppCompatActivity {
     List<String> accountList;
     List<String> distanceList;
     HashMap<String, List<String>> accountDetailsList;
+    HashMap<String, String> borrowerIdMap = new HashMap<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,7 +78,7 @@ public class HomeActivity extends AppCompatActivity {
 
         accountDetailsList = new HashMap<String, List<String>>();
 
-        listViewAdapter = new ExpandableListViewAdapter(this, accountList, distanceList, accountDetailsList);
+        listViewAdapter = new ExpandableListViewAdapter(this, accountList, distanceList, accountDetailsList, borrowerIdMap);
         expandableListView.setAdapter(listViewAdapter);
 
         showAccountList();
@@ -119,6 +120,8 @@ public class HomeActivity extends AppCompatActivity {
                     for (int i = 0; i < jsonArray.length(); i++) {
                         JSONObject object = jsonArray.getJSONObject(i);
                         String borrowerFullName = object.getString("borrower_full_name");
+                        String borrowerID = object.getString("borrower_id");
+                        borrowerIdMap.put(borrowerFullName, borrowerID);
 
                         if (!accountList.contains(borrowerFullName)) {
                             newAccountList.add(borrowerFullName);
