@@ -102,9 +102,7 @@ public class HomeActivity extends AppCompatActivity {
 
     private void showAccountList() {
 
-        accountList.clear();
-        distanceList.clear();
-        accountDetailsList.clear();
+
 
         StringRequest request = new StringRequest(Request.Method.GET, API.locate_borrower_api, response -> {
             try {
@@ -186,10 +184,14 @@ public class HomeActivity extends AppCompatActivity {
                         }
 
                         if (!newAccountList.isEmpty()) {
+                            accountList.clear();
+                            distanceList.clear();
+                            accountDetailsList.clear();
 
                             accountList.addAll(sortedAccountList);
                             distanceList.addAll(sortedDistanceList);
                             accountDetailsList.putAll(sortedAccountDetailsList);
+
 
                             listViewAdapter.notifyDataSetChanged();
 

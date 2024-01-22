@@ -235,7 +235,7 @@ public class RegisterActivity extends AppCompatActivity {
                         editor.putBoolean("isLoggedIn", true);
                         editor.apply();
 
-                        startActivity(new Intent(RegisterActivity.this, HomeActivity.class));
+                        startActivity(new Intent(RegisterActivity.this, StartingActivity.class));
                         RegisterActivity.this.finish();
                     }
 
