@@ -27,6 +27,7 @@ import com.google.android.material.textfield.TextInputLayout;
 import org.focus.app.Constants.API;
 import org.focus.app.HomeActivity;
 import org.focus.app.R;
+import org.focus.app.StartingActivity;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -240,7 +241,7 @@ public class RegisterActivity extends AppCompatActivity {
                         editor.putBoolean("isLoggedIn", true);
                         editor.apply();
 
-                        startActivity(new Intent(RegisterActivity.this, HomeActivity.class));
+                        startActivity(new Intent(RegisterActivity.this, StartingActivity.class));
                         RegisterActivity.this.finish();
                     }
 

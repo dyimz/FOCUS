@@ -25,6 +25,7 @@ import com.google.android.material.textfield.TextInputLayout;
 import org.focus.app.Constants.API;
 import org.focus.app.HomeActivity;
 import org.focus.app.R;
+import org.focus.app.StartingActivity;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -128,7 +129,7 @@ public class LoginActivity extends AppCompatActivity {
 
                     //if Success
                     Toast.makeText(this, "Login Success", Toast.LENGTH_SHORT).show();
-                    startActivity(new Intent(this, HomeActivity.class));
+                    startActivity(new Intent(this, StartingActivity.class));
                     this.finish();
                 }
 
