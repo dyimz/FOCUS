@@ -1,26 +1,33 @@
 package org.focus.app.Location;
 
+
 import android.Manifest;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.location.Address;
-import android.location.Geocoder;
 import android.location.Location;
 import android.os.Build;
+import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
-import android.provider.Settings;
 import android.util.Log;
+import com.android.volley.AuthFailureError;
+import com.android.volley.DefaultRetryPolicy;
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
-import androidx.core.app.NotificationManagerCompat;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
@@ -28,201 +35,201 @@ import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 
-import androidx.core.app.NotificationCompat;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Locale;
-
-import android.app.AlarmManager;
-import android.app.PendingIntent;
-import android.content.Context;
-import android.os.SystemClock;
-
-import org.focus.app.HomeActivity;
+import org.focus.app.Constants.API;
 import org.focus.app.R;
 
-public class LocationService extends Service {
+import java.util.HashMap;
+import java.util.Map;
 
+public class LocationService extends Service {
     private FusedLocationProviderClient fusedLocationClient;
+    private LocationRequest locationRequest;
     private LocationCallback locationCallback;
+    private double currentUserLatitude = 0.0;
+    private double currentUserLongitude = 0.0;
+    private boolean firstlocationzzz = false;
+    private static final String CHANNEL_ID = "LocationServiceChannel";
+    private static final int NOTIFICATION_ID = 123;
+    private SharedPreferences userPref;
 
     @Override
     public void onCreate() {
         super.onCreate();
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
-        createLocationCallback();
-        createLocationRequest();
-    }
+        // Initialize location-related components here
+        Log.w("TAG", "oncreateLOCATION");
+        userPref = getSharedPreferences("user", Context.MODE_PRIVATE);
 
-    @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            stopSelf();
-            return START_NOT_STICKY;
-        }
-
-        startForeground(1, createNotification()); // Call without arguments
-        requestLocationUpdates();
-        return START_STICKY;
-    }
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-
-        // Show notification about service being restarted
-        showRestartNotification();
-
-        Intent restartServiceIntent = new Intent(getApplicationContext(), this.getClass());
-        restartServiceIntent.setPackage(getPackageName());
-
-        PendingIntent restartServicePendingIntent = PendingIntent.getService(
-                getApplicationContext(),
-                1,
-                restartServiceIntent,
-                PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_IMMUTABLE);
-
-        AlarmManager alarmService = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-        if (alarmService != null) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                if (alarmService.canScheduleExactAlarms()) {
-                    try {
-                        alarmService.setExact(
-                                AlarmManager.ELAPSED_REALTIME,
-                                SystemClock.elapsedRealtime() + 1000,
-                                restartServicePendingIntent);
-                    } catch (SecurityException e) {
-                        // Handle the exception, e.g., by showing a message to the user
-                    }
-                } else {
-                    // Direct user to settings if they cannot schedule exact alarms
-                    Intent intent = new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM);
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    getApplicationContext().startActivity(intent);
-                }
-            } else {
-                // For older versions, just set the exact alarm
-                alarmService.setExact(
-                        AlarmManager.ELAPSED_REALTIME,
-                        SystemClock.elapsedRealtime() + 1000,
-                        restartServicePendingIntent);
-            }
-        }
-    }
-
-    private void showRestartNotification() {
-        createNotificationChannel(); // Ensure your notification channel is created
-
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "YOUR_CHANNEL_ID")
-                .setContentTitle("Service Restart")
-                .setContentText("The location service is restarting.")
-                .setSmallIcon(R.drawable.ic_launcher_foreground) // Replace with your own icon
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT);
-
-        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
             return;
         }
-        notificationManager.notify(2, builder.build());
+
+        createNotificationChannel();
+        startForeground(NOTIFICATION_ID, getNotification());
+
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+        createLocationRequest();
+        createLocationCallback();
+
+        fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, null);
+
+
+
     }
 
+    private Notification getNotification() {
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
+                .setContentTitle("Location Service")
+                .setContentText("Tracking location in background")
+                .setSmallIcon(R.drawable.ic_launcher_background)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setOngoing(true); // This makes the notification un-clearable
 
-    private LocationRequest createLocationRequest() {
-        LocationRequest locationRequest = LocationRequest.create()
-                .setInterval(100)
-                .setFastestInterval(3000)
-                .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
-                .setMaxWaitTime(100);
-        return locationRequest;
+        return builder.build();
     }
 
+    private void createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel serviceChannel = new NotificationChannel(
+                    CHANNEL_ID,
+                    "Foreground Service Channel",
+                    NotificationManager.IMPORTANCE_DEFAULT
+            );
+
+            NotificationManager manager = getSystemService(NotificationManager.class);
+            manager.createNotificationChannel(serviceChannel);
+        }
+    }
+
+    private void createLocationRequest() {
+        Log.w("TAG", "request");
+        locationRequest = LocationRequest.create();
+        locationRequest.setInterval(10000);
+        locationRequest.setFastestInterval(10000);
+        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+    }
 
     private void createLocationCallback() {
+        Log.w("TAG", "callback");
+
         locationCallback = new LocationCallback() {
             @Override
-            public void onLocationResult(LocationResult locationResult) {
-                if (locationResult != null) {
-                    for (Location location : locationResult.getLocations()) {
-                        updateNotification(location);
-                        Log.d("LocationService", "Check - Location updated: Latitude: " + location.getLatitude() + ", Longitude: " + location.getLongitude());
+            public void onLocationResult(@NonNull LocationResult locationResult) {
+                if (locationResult == null) {
+                    Log.w("TAG", "no location result");
+                    return;
+                }
+                for (Location location : locationResult.getLocations()) {
+                    // Display the location in a Toast
+                    currentUserLatitude = location.getLatitude();
+                    currentUserLongitude = location.getLongitude();
+                    Log.w("TAG", "LOCATION = " + currentUserLatitude + " , " + currentUserLongitude);
 
+                    String latitudeString = String.valueOf(currentUserLatitude);
+                    String longitudeString = String.valueOf(currentUserLongitude);
+
+                    SharedPreferences sharedPreferences = getSharedPreferences("location", MODE_PRIVATE);
+                    SharedPreferences.Editor editor = sharedPreferences.edit();
+                    editor.putString("latitude", latitudeString);
+                    editor.putString("longitude", longitudeString);
+                    editor.apply();
+
+                    if(!firstlocationzzz){
+                        firstlocationzzz = true;
+                        sendLocationHandler.post(sendLocationRunnable);
                     }
+
+                    Handler handler = new Handler();
+                    Runnable updateNotificationTask = new Runnable() {
+                        @Override
+                        public void run() {
+                            // Update the notification content here
+                            updateNotification("Updated Location Service", "LOCATION = " + currentUserLatitude + " , " + currentUserLongitude);
+                            handler.postDelayed(this, 5 * 60 * 1000); // Schedule the next update in 5 minutes
+                        }
+                    };
+                    handler.post(updateNotificationTask);
                 }
             }
         };
     }
 
-    private void requestLocationUpdates() {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            return;
-        }
-        fusedLocationClient.requestLocationUpdates(createLocationRequest(), locationCallback, Looper.getMainLooper());
-    }
-
-    // Method with no arguments for initial notification without content text
-    private Notification createNotification() {
-        createNotificationChannel();
-
-        Intent notificationIntent = new Intent(this, HomeActivity.class);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE);
-
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "YOUR_CHANNEL_ID")
-                .setContentTitle("Location Update")
-                .setSmallIcon(R.drawable.ic_launcher_foreground)
-                .setContentIntent(pendingIntent)
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setOngoing(true);
-
-
-        return builder.build();
-    }
-
-    // Method with String argument for updates with content text
-    private Notification createNotification(String contentText) {
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "YOUR_CHANNEL_ID")
-                .setContentTitle("Location Update")
+    private void updateNotification(String contentTitle, String contentText) {
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
+                .setContentTitle(contentTitle)
                 .setContentText(contentText)
-                .setSmallIcon(R.drawable.ic_launcher_foreground)
-                .setPriority(NotificationCompat.PRIORITY_HIGH);
+                .setSmallIcon(R.drawable.ic_launcher_background)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setOngoing(true); // This makes the notification un-clearable
 
-        return builder.build();
+        NotificationManager manager = getSystemService(NotificationManager.class);
+        manager.notify(NOTIFICATION_ID, builder.build());
     }
 
+    private void sendLocationToDatabase() {
 
-    private void createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            CharSequence name = "Location Service Channel";
-            String description = "Channel for Location Service";
-            int importance = NotificationManager.IMPORTANCE_LOW; // Set importance to low to avoid sound and vibration
+        StringRequest request = new StringRequest(Request.Method.POST, API.locate_api, new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                try {
 
-            NotificationChannel channel = new NotificationChannel("YOUR_CHANNEL_ID", name, importance);
-            channel.setDescription(description);
-            channel.setSound(null, null); // Disable sound
-            channel.enableVibration(false); // Disable vibration
+                    Log.e("Location Submit", "Latitude: " + currentUserLatitude + " Longitude: " + currentUserLongitude);
 
-            NotificationManager notificationManager = getSystemService(NotificationManager.class);
-            notificationManager.createNotificationChannel(channel);
+                } catch (Error error) {
+
+                    Log.e("Location Submit", "Error processing response", error);
+
+                }
+            }
+        }, error -> {
+
+            Log.e("Location Submit", "Error sending location. Attempt ", error);
+
+        }) {
+
+            @Override
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                String token = userPref.getString("token", "");
+                HashMap<String, String> map = new HashMap<>();
+                map.put("Authorization", "Bearer " + token);
+                return map;
+            }
+
+            @Nullable
+            @Override
+            protected Map<String, String> getParams() throws AuthFailureError {
+                HashMap<String, String> map = new HashMap<>();
+                map.put("latitude", String.valueOf(currentUserLatitude));
+                map.put("longitude", String.valueOf(currentUserLongitude));
+                return map;
+            }
+        };
+
+        RequestQueue requestQueue = Volley.newRequestQueue(getApplicationContext());
+        request.setRetryPolicy(new DefaultRetryPolicy(
+                5000, // Consider reducing this timeout
+                0, // No automatic retries
+                DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
+
+        requestQueue.add(request);
+
+
+    }
+
+    private Handler sendLocationHandler = new Handler();
+    private Runnable sendLocationRunnable = new Runnable() {
+        @Override
+        public void run() {
+            sendLocationToDatabase();
+            sendLocationHandler.postDelayed(this, 10000); // Repeat every 1 Minute
         }
-    }
+    };
 
 
-    private void updateNotification(Location location) {
-        String contentText = "Latitude: " + location.getLatitude() + ", Longitude: " + location.getLongitude();
-        Notification notification = createNotification(contentText);
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-            return;
-        }
-        NotificationManagerCompat.from(this).notify(1, notification);
-    }
 
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
         return null;
     }
-
-
-
 }
